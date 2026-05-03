@@ -1,0 +1,15 @@
+artifact_uri: file:///C:/Personal/Educational/Projects/research_plus/backend/mlruns/934607377145493878/15a7fb324912449a8b3cdbc013891fea/artifacts
+end_time: 1777825555580
+entry_point_name: ''
+experiment_id: '934607377145493878'
+lifecycle_stage: active
+run_id: 15a7fb324912449a8b3cdbc013891fea
+run_name: Ridge_alpha1.0
+run_uuid: 15a7fb324912449a8b3cdbc013891fea
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1777825553935
+status: 3
+tags: []
+user_id: ASUS
