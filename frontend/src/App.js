@@ -467,6 +467,134 @@ function EvalTab({ token }) {
   );
 }
 
+// ── Upload Tab ───────────────────────────────────────────────────────────────
+
+function UploadTab({ token }) {
+  const [file, setFile] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [result, setResult] = useState(null);
+  const [error, setError] = useState('');
+  const [dragOver, setDragOver] = useState(false);
+
+  const handleFile = (f) => {
+    setResult(null);
+    setError('');
+    if (!f) return;
+    if (!f.name.endsWith('.csv')) {
+      setError('Only .csv files are accepted');
+      return;
+    }
+    setFile(f);
+  };
+
+  const submit = async () => {
+    if (!file) return;
+    setLoading(true); setResult(null); setError('');
+    const formData = new FormData();
+    formData.append('file', file);
+    try {
+      const res = await axios.post(`${API}/upload-csv`, formData, {
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'multipart/form-data' },
+      });
+      setResult(res.data);
+      setFile(null);
+    } catch (err) {
+      setError(err.response?.data?.detail || 'Upload failed');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="tab-content">
+      <h2 className="section-title">Upload Papers CSV</h2>
+      <p className="section-sub">
+        Add new papers to the corpus — they'll be classified, scored, and indexed instantly
+      </p>
+
+      <div
+        onDragOver={e => { e.preventDefault(); setDragOver(true); }}
+        onDragLeave={() => setDragOver(false)}
+        onDrop={e => { e.preventDefault(); setDragOver(false); handleFile(e.dataTransfer.files[0]); }}
+        onClick={() => document.getElementById('csv-input').click()}
+        style={{
+          border: `2px dashed ${dragOver ? 'var(--accent)' : 'var(--border)'}`,
+          borderRadius: 'var(--radius)',
+          padding: '48px 24px',
+          textAlign: 'center',
+          cursor: 'pointer',
+          background: dragOver ? 'rgba(124,109,250,0.06)' : 'var(--bg2)',
+          transition: 'all 0.15s',
+          marginBottom: '16px',
+        }}
+      >
+        <div style={{ fontSize: '2.5rem', marginBottom: '10px' }}>📂</div>
+        {file
+          ? <div style={{ color: 'var(--accent)', fontWeight: 700 }}>{file.name} ({(file.size / 1024).toFixed(1)} KB)</div>
+          : <div style={{ color: 'var(--text2)' }}>Drop a <strong>.csv</strong> here, or click to browse</div>
+        }
+        <input
+          id="csv-input"
+          type="file"
+          accept=".csv"
+          style={{ display: 'none' }}
+          onChange={e => handleFile(e.target.files[0])}
+        />
+      </div>
+
+      <div style={{
+        background: 'var(--bg2)',
+        border: '1px solid var(--border)',
+        borderRadius: 'var(--radius)',
+        padding: '14px 16px',
+        marginBottom: '16px',
+        fontSize: '0.82rem',
+        color: 'var(--text3)',
+      }}>
+        <strong style={{ color: 'var(--text2)' }}>Required columns:</strong>{' '}
+        <code style={{ color: 'var(--accent2)' }}>title</code>,{' '}
+        <code style={{ color: 'var(--accent2)' }}>abstract</code>,{' '}
+        <code style={{ color: 'var(--accent2)' }}>year</code>,{' '}
+        <code style={{ color: 'var(--accent2)' }}>citations</code>,{' '}
+        <code style={{ color: 'var(--accent2)' }}>keywords</code>,{' '}
+        <code style={{ color: 'var(--accent2)' }}>category</code>
+        <span style={{ marginLeft: 8 }}>— column names are case-insensitive, missing numeric fields default to 0.</span>
+      </div>
+
+      {error && <div className="msg-error">{error}</div>}
+
+      {result && (
+        <div className="result-card" style={{ maxWidth: '100%' }}>
+          <div style={{ fontSize: '1.4rem' }}>✅</div>
+          <div className="result-title">Upload successful</div>
+          <div style={{ display: 'flex', gap: '24px', flexWrap: 'wrap', marginTop: 4 }}>
+            <div className="stat-card" style={{ flex: 1, minWidth: 120 }}>
+              <div className="stat-num" style={{ fontSize: '1.8rem' }}>{result.rows_added}</div>
+              <div className="stat-name">Papers added</div>
+            </div>
+            <div className="stat-card" style={{ flex: 1, minWidth: 120 }}>
+              <div className="stat-num" style={{ fontSize: '1.8rem' }}>{result.total_papers}</div>
+              <div className="stat-name">Total in corpus</div>
+            </div>
+          </div>
+          <div style={{ fontSize: '0.8rem', color: 'var(--text3)', marginTop: 4 }}>
+            New IDs: {result.new_ids.slice(0, 10).join(', ')}{result.new_ids.length > 10 ? ` … +${result.new_ids.length - 10} more` : ''}
+          </div>
+        </div>
+      )}
+
+      <button
+        className="btn-primary"
+        style={{ maxWidth: 220, marginTop: 8 }}
+        onClick={submit}
+        disabled={!file || loading}
+      >
+        {loading ? <Spinner /> : '⬆ Upload & Index'}
+      </button>
+    </div>
+  );
+}
+
 // ── Main App ─────────────────────────────────────────────────────────────────
 
 const TABS = [
@@ -475,6 +603,7 @@ const TABS = [
   { id: 'ml',     label: '◉ ML Score' },
   { id: 'stats',  label: '▣ Analytics' },
   { id: 'eval',   label: '◇ Evaluate' },
+  { id: 'upload', label: '⬆ Upload CSV' },
 ];
 
 export default function App() {
@@ -533,6 +662,7 @@ export default function App() {
         {tab === 'ml'     && <MLTab token={token} />}
         {tab === 'stats'  && <StatsTab token={token} />}
         {tab === 'eval'   && <EvalTab token={token} />}
+        {tab === 'upload' && <UploadTab token={token} />}
       </main>
     </div>
   );
